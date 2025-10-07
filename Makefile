@@ -12,13 +12,13 @@ SRC_DIR     := src
 BUILD_DIR   := build
 BIN_DIR     := bin
 
-# Gather source files
-CU_SRCS     := $(wildcard $(SRC_DIR)/*.cu)
-CPP_SRCS    := $(wildcard $(SRC_DIR)/*.cpp)
+# Gather all source files recursively
+CU_SRCS     := $(shell find $(SRC_DIR) -type f -name '*.cu')
+CPP_SRCS    := $(shell find $(SRC_DIR) -type f -name '*.cpp')
 
-# Generate object file names in build/
-CU_OBJS     := $(patsubst $(SRC_DIR)/%.cu, $(BUILD_DIR)/%.o, $(CU_SRCS))
-CPP_OBJS    := $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(CPP_SRCS))
+# Map src/... to build/... (preserve directory structure)
+CU_OBJS     := $(patsubst $(SRC_DIR)/%.cu,$(BUILD_DIR)/%.o,$(CU_SRCS))
+CPP_OBJS    := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(CPP_SRCS))
 OBJS        := $(CU_OBJS) $(CPP_OBJS)
 
 # Output binary
@@ -32,24 +32,26 @@ $(TARGET): $(OBJS)
 	@echo "Linking $(TARGET)"
 	$(NVCC) $(OBJS) -o $@ $(LDFLAGS)
 
-# Compile CUDA source files
+# Pattern rule for CUDA compilation
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cu
+	@mkdir -p $(dir $@)
 	@echo "Compiling CUDA: $<"
 	$(NVCC) $(NVCCFLAGS) -c $< -o $@
 
-# Compile C++ source files
+# Pattern rule for C++ compilation
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@mkdir -p $(dir $@)
 	@echo "Compiling C++: $<"
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Create directories if missing
+# Create output directories
 dirs:
 	@mkdir -p $(BUILD_DIR) $(BIN_DIR)
 
 # Clean build artifacts
 clean:
 	@echo "Cleaning up..."
-	rm -rf $(BUILD_DIR)/* $(BIN_DIR)/*
+	rm -rf $(BUILD_DIR) $(BIN_DIR)
 
 # Phony targets
 .PHONY: all clean dirs
