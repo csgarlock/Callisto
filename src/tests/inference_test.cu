@@ -1,9 +1,5 @@
 #include "inference_test.h"
 
-#include <vector>
-#include <iostream>
-#include <random>
-
 void test_feed_forward(int m, int n) {
     std::cout << "Testing feed_forward with m=" << m << ", n=" << n << std::endl;
 
