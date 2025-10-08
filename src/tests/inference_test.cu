@@ -38,7 +38,9 @@ void test_feed_forward(int m, int n) {
 
     // Kernel configuration
     const int threads = 256;
-    const int blocks = std::min(m, 128);  // up to 128 rows in parallel
+    const int blocks = std::min(m / 32, 256);  // up to 256 tiles in parallel
+
+    std::cout << "Launch Config. Blocks: " << blocks << ", Threads per Block: " << threads << std::endl; 
 
     MatrixMultShape shape{n, m};
 
@@ -60,9 +62,9 @@ void test_feed_forward(int m, int n) {
 
     // Validation
     float max_err = 0.0f;
-    for (int i = 0; i < m; ++i)
+    for (int i = 0; i < m; ++i) {
         max_err = std::max(max_err, std::abs(h_output_cpu[i] - h_output_gpu[i]));
-
+    }
     // Performance metrics
     double flops = static_cast<double>(m) * n * 2.0; // mul + add per element
     double gflops = (flops / (elapsed_ms / 1e3)) / 1e9;

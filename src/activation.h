@@ -15,6 +15,12 @@ struct LogisticSigmoid {
     static float cpu(float x) { return 1.0f / (1.0f + std::exp(-x)); }
 };
 
+struct Identity {
+    __device__ static float apply(float x) { return x; }
+
+    static float cpu(float x) { return x; }
+};
+
 template <typename Activation>
 __global__ void activation(float *__restrict__ vec, int n) {
     int n4 = n / 4;
