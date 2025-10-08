@@ -1,7 +1,8 @@
-#ifndef MATRIX_H_INCLUDED
-#define MATRIX_H_INCLUDED
+#ifndef FEED_FORWARD_H_INCLUDED
+#define FEED_FORWARD_H_INCLUDED
 
-#include <cstdlib>
+#include "activation.h"
+
 #include <cuda_runtime.h>
 
 struct MatrixMultShape {
@@ -68,8 +69,6 @@ __global__ void feed_forward(const float *__restrict__ input, const float *__res
             for (int tile_row = warp; tile_row < TILE_HEIGHT; tile_row += WARP_COUNT) {
 
                 sum = weight_cache[tile_row * TILE_WIDTH + lane] * input_cache[lane];
-                // sum = weights[(tile_row + tile_y_offset) * TILE_WIDTH + tile_x_offset + lane] * input_cache[lane];
-                // sum = weight_cache[tile_row * TILE_WIDTH + lane] * input[lane + tile_x_offset];
 
                 // Reduction
                 for (int offset = 16; offset > 0; offset /= 2) {

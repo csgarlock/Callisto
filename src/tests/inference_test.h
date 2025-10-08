@@ -2,8 +2,8 @@
 #define INFERENCE_TEST_H_INCLUDED
 
 #include "../util.h"
-#include "../activation.h"
-#include "../matrix.h"
+#include "../kernels/activation.h"
+#include "../kernels/feed_forward.h"
 
 #include <vector>
 #include <iostream>
