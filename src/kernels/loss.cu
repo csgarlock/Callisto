@@ -10,36 +10,6 @@
 
 #define SHUFFLE_MASK 0xffffffffu
 
-float mean_squared_error(Tensor<float, 1> &predicted, Tensor<float, 1> &actual) {
-    if (predicted.shape[0] != actual.shape[0]) {
-        // actual errors later
-        return std::nanf("");
-    }
-    int size = predicted.shape[0];
-    if (size < MSE_SMALL_THRESHOLD) {
-        predicted.change_memory_location(MemoryLocation::Host);
-        actual.change_memory_location(MemoryLocation::Host);
-        return mse_cpu<float>(predicted.data, actual.data, size);
-    } else if (size < MSE_MEDIUM_THRESHOLD) {
-        Tensor<float, 0> result(MemoryLocation::Device);
-        predicted.change_memory_location(MemoryLocation::Device);
-        actual.change_memory_location(MemoryLocation::Device);
-        se_gpu<<<1, 1024>>>(predicted.data, actual.data, result.data, size);
-        CUDA_CHECK(cudaDeviceSynchronize());
-        result.change_memory_location(MemoryLocation::Host);
-        return result.data[0] / size;
-    } else {
-        int blocks = (size + 16384 - 1) / 16384;
-        Tensor<float, 1> result({blocks}, MemoryLocation::Device);
-        predicted.change_memory_location(MemoryLocation::Device);
-        actual.change_memory_location(MemoryLocation::Device);
-        se_gpu<true><<<blocks, 1024>>>(predicted.data, actual.data, result.data, size);
-        CUDA_CHECK(cudaDeviceSynchronize());
-        // callee handles changing memory location back to Host
-        return cpu_sum_reduction<float>(result) / size;
-    }
-}
-
 template <typename T>
 float mse_cpu(const T *__restrict__ predicted, const T *__restrict__ actual, int n) {
     T acc = 0;
@@ -65,7 +35,7 @@ __device__ float diff_and_square(float predicted, float actual) {
 
 // Must be called with 1024 threads per block
 // If calling with more than one block, MultiBlock must be true
-template <bool MultiBlock = false>
+template <bool MultiBlock>
 __global__ void se_gpu(float *__restrict__ predicted, float *__restrict__ actual, float *__restrict__ loss, int n) {
     int n4 = n / 4;
 
@@ -108,5 +78,35 @@ __global__ void se_gpu(float *__restrict__ predicted, float *__restrict__ actual
         if (threadIdx.x == 0) {
             loss[blockIdx.x] = final_sum;
         }
+    }
+}
+
+float mean_squared_error(Tensor<float, 1> &predicted, Tensor<float, 1> &actual) {
+    if (predicted.shape[0] != actual.shape[0]) {
+        // actual errors later
+        return std::nanf("");
+    }
+    int size = predicted.shape[0];
+    if (size < MSE_SMALL_THRESHOLD) {
+        predicted.change_memory_location(MemoryLocation::Host);
+        actual.change_memory_location(MemoryLocation::Host);
+        return mse_cpu(predicted.data, actual.data, size);
+    } else if (size < MSE_MEDIUM_THRESHOLD) {
+        Tensor<float, 0> result(MemoryLocation::Device);
+        predicted.change_memory_location(MemoryLocation::Device);
+        actual.change_memory_location(MemoryLocation::Device);
+        se_gpu<<<1, 1024>>>(predicted.data, actual.data, result.data, size);
+        CUDA_CHECK(cudaDeviceSynchronize());
+        result.change_memory_location(MemoryLocation::Host);
+        return result.data[0] / size;
+    } else {
+        int blocks = (size + 16384 - 1) / 16384;
+        Tensor<float, 1> result({blocks}, MemoryLocation::Device);
+        predicted.change_memory_location(MemoryLocation::Device);
+        actual.change_memory_location(MemoryLocation::Device);
+        se_gpu<true><<<blocks, 1024>>>(predicted.data, actual.data, result.data, size);
+        CUDA_CHECK(cudaDeviceSynchronize());
+        // callee handles changing memory location back to Host
+        return cpu_sum_reduction<float>(result) / size;
     }
 }
