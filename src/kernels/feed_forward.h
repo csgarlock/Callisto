@@ -9,7 +9,7 @@ struct MatrixMultShape {
     int input;
     int output;
 };
-
+ 
 // shape.n must be divisible by 32, shape.m must be divisible by 32.
 // blockDim.x must equal 256
 // Failing to meet any of the required precondition will result in undefined behavior

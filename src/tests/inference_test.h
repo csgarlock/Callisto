@@ -32,7 +32,7 @@ void test_activation(const int n) {
     // Timing with CUDA events
     cudaEvent_t start, stop;
     CUDA_CHECK(cudaEventCreate(&start));
-    CUDA_CHECK(cudaEventCreate(&stop));
+    CUDA_CHECK(cudaEventCreate(&stop)); 
 
     CUDA_CHECK(cudaEventRecord(start));
     activation<Activation><<<blocks, threads>>>(dev_vec, n);
