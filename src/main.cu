@@ -1,16 +1,12 @@
 #include "tests/inference_test.h"
+#include "tests/loss_test.h"
 
 #include "types.h"
 #include "util.h"
 #include <array>
 
 int main() {
-    // Example: 4096×4096 matvec (big enough for stable timing)
-    Tensor<float, 2> A({128, 256}, MemoryLocation::Device);
-    // test_feed_forward(32, 32);
-    // test_feed_forward(4096, 4096);
-    // test_feed_forward(4096, 32768);
-    // test_feed_forward(32768, 4096);
-    // test_feed_forward(32768, 32768);
+    test_mse(6233);
+    test_mse(131072);
     return 0;
 }

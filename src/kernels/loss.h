@@ -1,14 +1,11 @@
 #ifndef KERNEL_LOSS_H_INCLUDED
 #define KERNEL_LOSS_H_INCLUDED
 
-#include "../util.h"
-#include "../types.h"
-
 #include <cuda_runtime.h>
 
 #define SHUFFLE_MASK 0xffffffffu
 
-__device__ void warp_reduction(float sum, float *output) {
+__device__ void loss_warp_reduction(float sum, float *output) {
     for (int offset = 16; offset > 0; offset /= 2) {
         sum += __shfl_down_sync(SHUFFLE_MASK, sum, offset);
     }
@@ -17,7 +14,7 @@ __device__ void warp_reduction(float sum, float *output) {
     }
 }
 
-__device__ float diff_and_square(float predicted, float actual) {
+__device__ float se_diff_and_square(float predicted, float actual) {
     return (actual - predicted) * (actual - predicted);
 }
 
@@ -47,22 +44,22 @@ __global__ void se_gpu(float *__restrict__ predicted, float *__restrict__ actual
     for (int i = idx; i < n4; i += stride) {
         float4 pred_vals = predicted4[i];
         float4 actual_vals = actual4[i];
-        sum += diff_and_square(pred_vals.x, actual_vals.x);
-        sum += diff_and_square(pred_vals.y, actual_vals.y);
-        sum += diff_and_square(pred_vals.z, actual_vals.z);
-        sum += diff_and_square(pred_vals.w, actual_vals.w);
+        sum += se_diff_and_square(pred_vals.x, actual_vals.x);
+        sum += se_diff_and_square(pred_vals.y, actual_vals.y);
+        sum += se_diff_and_square(pred_vals.z, actual_vals.z);
+        sum += se_diff_and_square(pred_vals.w, actual_vals.w);
     }
     
     // bring last few values in if n not divisible by 4
     if (blockIdx.x == 0 && threadIdx.x < n % 4) {
         int cleanup_idx = (n & ~0b11) + threadIdx.x;
-        sum += diff_and_square(predicted[cleanup_idx], actual[cleanup_idx]);
+        sum += se_diff_and_square(predicted[cleanup_idx], actual[cleanup_idx]);
     }
 
-    warp_reduction(sum, warp_sums);
+    loss_warp_reduction(sum, warp_sums);
     __syncthreads();
     if (warp == 0) {
-        warp_reduction(warp_sums[lane], &final_sum);
+        loss_warp_reduction(warp_sums[lane], &final_sum);
         if (threadIdx.x == 0) {
             loss[blockIdx.x] = final_sum;
         }

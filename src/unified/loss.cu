@@ -15,7 +15,7 @@ float mean_squared_error(Tensor<float, 1> &predicted, Tensor<float, 1> &actual) 
         return std::nanf("");
     }
     int size = predicted.shape[0];
-    if (size < MSE_SMALL_THRESHOLD) {
+    if (size < MSE_SMALL_THRESHOLD && (predicted.memory_location == MemoryLocation::Host || actual.memory_location == MemoryLocation::Host)) {
         predicted.change_memory_location(MemoryLocation::Host);
         actual.change_memory_location(MemoryLocation::Host);
         return mse_cpu(predicted.data, actual.data, size);

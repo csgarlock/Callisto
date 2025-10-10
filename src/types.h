@@ -6,8 +6,10 @@
 #include <cuda_runtime.h>
 #include <cstdlib>
 #include <array>
+#include <vector>
 #include <iostream>
 #include <algorithm>
+#include <cstring>
 
 enum MemoryLocation {
     Host,
@@ -76,8 +78,9 @@ struct Tensor {
     size_t mem_size() const { return size() * sizeof(T); }
     
     void change_memory_location(MemoryLocation new_location) {
-        if (new_location == memory_location || !data)
+        if (new_location == memory_location || !data) {
             return;
+        }
 
         T* new_data = nullptr;
         if (new_location == MemoryLocation::Device) {
@@ -92,6 +95,17 @@ struct Tensor {
 
         data = new_data;
         memory_location = new_location;
+    }
+
+    void copy_vec(std::vector<T> &vec) {
+        if (vec.size() != size() || !data) {
+            return;
+        }
+        if (memory_location == MemoryLocation::Device) {
+            CUDA_CHECK(cudaMemcpy(data, vec.data(), mem_size(), cudaMemcpyHostToDevice));
+        } else if (memory_location == MemoryLocation::Host) {
+            std::copy(vec.begin(), vec.end(), data);
+        }
     }
 
 };

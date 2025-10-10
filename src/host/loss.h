@@ -8,7 +8,7 @@ float mse_cpu(const T *__restrict__ predicted, const T *__restrict__ actual, int
         T diff = actual[i] - predicted[i];
         acc += diff * diff;
     }
-    return acc;
+    return acc / n;
 }
 
 #endif
