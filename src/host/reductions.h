@@ -1,5 +1,5 @@
-#ifndef REDUCTIONS_H_INCLUDED
-#define REDUCTIONS_H_INCLUDED
+#ifndef HOST_REDUCTIONS_H_INCLUDED
+#define HOST_REDUCTIONS_H_INCLUDED
 
 #include "../types.h"
 

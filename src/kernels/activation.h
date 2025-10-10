@@ -1,5 +1,5 @@
-#ifndef ACTIVATION_H_INCLUDED
-#define ACTIVATION_H_INCLUDED
+#ifndef KERNEL_ACTIVATION_H_INCLUDED
+#define KERNEL_ACTIVATION_H_INCLUDED
 
 #include <cuda_runtime.h>
 
