@@ -3,7 +3,6 @@
 
 #include "../util.h"
 #include "../kernels/activation.h"
-#include "../kernels/feed_forward.h"
 
 #include <vector>
 #include <iostream>

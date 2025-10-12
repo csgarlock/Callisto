@@ -3,8 +3,8 @@
 # Compiler settings
 NVCC        := nvcc
 CXX         := g++
-CXXFLAGS    := -O3 -std=c++17
-NVCCFLAGS   := -O3 -std=c++17 -arch=sm_89
+CXXFLAGS    := -O3 -std=c++20 -MMD -MP
+NVCCFLAGS   := -O3 -std=c++20 -arch=sm_89 -MMD -MP
 LDFLAGS     := -lcudart
 
 # Directory paths
@@ -43,6 +43,9 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(dir $@)
 	@echo "Compiling C++: $<"
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Include automatically generated dependency files
+-include $(OBJS:.o=.d)
 
 # Create output directories
 dirs:

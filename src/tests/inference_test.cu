@@ -1,5 +1,7 @@
 #include "inference_test.h"
 
+#include "../kernels/linear.h"
+
 void test_feed_forward(int m, int n) {
     std::cout << "Testing feed_forward with m=" << m << ", n=" << n << std::endl;
 
@@ -50,7 +52,7 @@ void test_feed_forward(int m, int n) {
     CUDA_CHECK(cudaEventCreate(&stop));
 
     CUDA_CHECK(cudaEventRecord(start));
-    feed_forward<<<blocks, threads>>>(d_input, d_weights, d_biases, d_output, shape);
+    linear_forward_mtm<<<blocks, threads>>>(d_input, d_weights, d_biases, d_output, shape);
     CUDA_CHECK(cudaEventRecord(stop));
 
     CUDA_CHECK(cudaEventSynchronize(stop));

@@ -6,7 +6,9 @@
 #include <array>
 
 int main() {
-    test_mse(6233);
-    test_mse(131072);
+    test_feed_forward(32, 32);
+    test_feed_forward(8192, 32768);
+    test_feed_forward(32768, 8192);
+    test_feed_forward(32768, 32768);
     return 0;
 }
