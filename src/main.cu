@@ -6,9 +6,8 @@
 #include <array>
 
 int main() {
-    test_feed_forward(32, 32);
-    test_feed_forward(8192, 32768);
-    test_feed_forward(32768, 8192);
-    test_feed_forward(32768, 32768);
+    test_feed_forward_batch(32, 32, 32);
+    test_feed_forward_batch(256, 256, 256);
+    test_feed_forward_batch(16384, 16384, 1024);
     return 0;
 }

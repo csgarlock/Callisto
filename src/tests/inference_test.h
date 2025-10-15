@@ -67,5 +67,6 @@ void test_activation(const int n) {
 }
 
 void test_feed_forward(int m, int n);
+void test_feed_forward_batch(int m, int n, int batch_size);
 
 #endif

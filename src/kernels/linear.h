@@ -13,6 +13,19 @@ struct MatrixMultShape {
     int batch_size = 1;
 };
 
+template <bool Batch>
+__device__ __forceinline__ void clear_accumulators(float *__restrict__ sums) {
+    if constexpr (Batch) {
+        for (int i = 0; i < 4; i++) {
+            sums[threadIdx.x * 4 + i] = 0.0f;
+        }
+    } else {
+        if (threadIdx.x < 32) {
+            sums[threadIdx.x] = 0.0f;
+        }
+    }
+}
+
 __device__ __forceinline__ void fill_weights(const float *__restrict__ src, float *__restrict__ des, int x_offset, int y_offset, int n) {
     const float4 *src4 = reinterpret_cast<const float4*>(src);
     float4 *des4 = reinterpret_cast<float4*>(des);
@@ -47,7 +60,7 @@ __device__ __forceinline__ void accumulate(const float *__restrict__ weights, fl
             for (int col = 0; col < 32; col++) {
                 sum += weights[row * 32 + col] * input[depth * 32 + col];
             }
-            sums[depth * 32 + row] = sum;
+            sums[depth * 32 + row] += sum;
         }
     } else {
         // 8 threads per 1 row
@@ -66,6 +79,23 @@ __device__ __forceinline__ void accumulate(const float *__restrict__ weights, fl
     }
 }
 
+template <bool Batch, typename Activation>
+__device__ __forceinline__ void move_to_output(const float *__restrict__ sums, const float *__restrict__ biases, float *__restrict__ output, int y_offset, int k_offset, int m) {
+    if constexpr (Batch) {
+        int start_row = (threadIdx.x % 8) * 4 + y_offset;
+        int depth = (threadIdx.x / 8) + k_offset;
+        for (int i = 0; i < 4; i++) {
+            int row = start_row + i;
+            output[depth * m + row] = Activation::apply(sums[threadIdx.x * 4 + i] + biases[row]);
+        }
+    } else {
+        if (threadIdx.x < 32) {
+            int output_index = y_offset + threadIdx.x;
+            output[output_index] = Activation::apply(sums[threadIdx.x] + biases[output_index]);
+        }
+    }
+}
+
 // shape.n must be divisible by 32, shape.m must be divisible by 32.
 // blockDim.x must equal 256
 // Failing to meet any of the required precondition will result in undefined behavior
@@ -73,7 +103,6 @@ template <typename Activation = Identity>
 __global__ void linear_forward_mtm(const float *__restrict__ input, const float *__restrict__ weights, const float *__restrict__ biases, float *__restrict__ output, MatrixMultShape shape) {
     
     // setup
-    const int THREADS_PER_BLOCK = 256;
     const int TILE_WIDTH = 32;
     const int TILE_HEIGHT = 32;
 
@@ -90,10 +119,8 @@ __global__ void linear_forward_mtm(const float *__restrict__ input, const float 
     // Each block takes care of a row of tiles at a time then moves to another row
     for (int tile_y = blockIdx.x; tile_y < tile_m; tile_y += gridDim.x) {
         int tile_y_offset = tile_y * TILE_HEIGHT;
-        // clear accumulators
-        if (threadIdx.x < TILE_HEIGHT) {
-            sums[threadIdx.x] = 0.0f;
-        }
+        
+        clear_accumulators<false>(sums);
 
         for (int tile_x = 0; tile_x < tile_n; tile_x++) {
             int tile_x_offset = tile_x * TILE_WIDTH;
@@ -105,23 +132,17 @@ __global__ void linear_forward_mtm(const float *__restrict__ input, const float 
             __syncthreads();
         }
         
-        // The entire row of tiles now has it's sum in sums.
-        // Move to output and add bias
-        if (threadIdx.x < TILE_HEIGHT) {
-            int output_index = tile_y * TILE_HEIGHT + threadIdx.x;
-            output[output_index] = Activation::apply(sums[threadIdx.x] + biases[output_index]);
-        }
+        move_to_output<false, Activation>(sums, biases, output, tile_y_offset, 0, m);
     }   
 }
 
-// shape.n must be divisible by 32, shape.m must be divisible by 32.
+// shape.n must be divisible by 32, shape.m must be divisible by 32, shape.batch_size must be divisible by 32.
 // blockDim.x must equal 256
 // Failing to meet any of the required precondition will result in undefined behavior
 template <typename Activation = Identity>
 __global__ void linear_forward_mtm_batch(const float *__restrict__ input, const float *__restrict__ weights, const float *__restrict__ biases, float *__restrict__ output, MatrixMultShape shape) {
     
     // setup
-    const int THREADS_PER_BLOCK = 256;
     const int TILE_WIDTH = 32;
     const int TILE_HEIGHT = 32;
     const int TILE_DEPTH = 32;
@@ -139,14 +160,13 @@ __global__ void linear_forward_mtm_batch(const float *__restrict__ input, const 
     __shared__ float sums[TILE_HEIGHT * TILE_DEPTH];
 
     for (int tile_z = blockIdx.y; tile_z < tile_k; tile_z += gridDim.y) {
+
         int tile_k_offset = tile_z * TILE_DEPTH;
         // Each block takes care of a row of tiles at a time then moves to another row
         for (int tile_y = blockIdx.x; tile_y < tile_m; tile_y += gridDim.x) {
             int tile_y_offset = tile_y * TILE_HEIGHT;
-            // clear accumulators
-            if (threadIdx.x < TILE_HEIGHT) {
-                sums[threadIdx.x] = 0.0f;
-            }
+            
+            clear_accumulators<true>(sums);
 
             for (int tile_x = 0; tile_x < tile_n; tile_x++) {
 
@@ -159,17 +179,7 @@ __global__ void linear_forward_mtm_batch(const float *__restrict__ input, const 
                 __syncthreads();
             }
 
-            int output_y = tile_y;
-            for (int i = 0; i < 4; i++) {
-                output[threadIdx.x * 4 + i] 
-            }
-            
-            // The entire row of tiles now has it's sum in sums.
-            // Move to output and add bias
-            if (threadIdx.x < TILE_HEIGHT) {
-                int output_index = tile_y * TILE_HEIGHT + threadIdx.x;
-                output[output_index] = Activation::apply(sums[threadIdx.x] + biases[output_index]);
-            }
+            move_to_output<true, Activation>(sums, biases, output, tile_y_offset, tile_k_offset, m);
         }
     }
 }
