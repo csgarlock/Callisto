@@ -2,16 +2,11 @@
 #define KERNEL_LINEAR_H_INCLUDED
 
 #include "activation.h"
+#include "../types.h"
 
 #include <cuda_runtime.h>
 
 #define SHUFFLE_MASK 0xffffffffu
-
-struct MatrixMultShape {
-    int input;
-    int output;
-    int batch_size = 1;
-};
 
 template <bool Batch>
 __device__ __forceinline__ void clear_accumulators(float *__restrict__ sums) {

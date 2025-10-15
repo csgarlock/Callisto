@@ -109,6 +109,12 @@ struct Tensor {
     }
 
 };
+
+struct MatrixMultShape {
+    int input;
+    int output;
+    int batch_size = 1;
+};
     
 
 #endif
