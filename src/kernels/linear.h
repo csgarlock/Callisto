@@ -81,12 +81,12 @@ __device__ __forceinline__ void move_to_output(const float *__restrict__ sums, c
         int depth = (threadIdx.x / 8) + k_offset;
         for (int i = 0; i < 4; i++) {
             int row = start_row + i;
-            output[depth * m + row] = Activation::apply(sums[threadIdx.x * 4 + i] + biases[row]);
+            output[depth * m + row] = Activation::device_forward(sums[threadIdx.x * 4 + i] + biases[row]);
         }
     } else {
         if (threadIdx.x < 32) {
             int output_index = y_offset + threadIdx.x;
-            output[output_index] = Activation::apply(sums[threadIdx.x] + biases[output_index]);
+            output[output_index] = Activation::device_forward(sums[threadIdx.x] + biases[output_index]);
         }
     }
 }
@@ -177,6 +177,78 @@ __global__ void linear_forward_mtm_batch(const float *__restrict__ input, const 
             move_to_output<true, Activation>(sums, biases, output, tile_y_offset, tile_k_offset, m);
         }
     }
+}
+
+__device__ void linear_warp_reduction(float sum, float *output) {
+    for (int offset = 16; offset > 0; offset /= 2) {
+        sum += __shfl_down_sync(SHUFFLE_MASK, sum, offset);
+    }
+    if (threadIdx.x % 32 == 0) {
+        output[threadIdx.x / 32] = sum;
+    }
+}
+
+template <typename Activation = Identity>
+__global__ void linear_forward_mto(const float *__restrict__ input, const float *__restrict__ weights, const float *__restrict__ bias, float *__restrict__ output, MatrixMultShape shape) {
+    
+    const int n = shape.input;
+    const int k = shape.batch_size;
+
+    const int warp = threadIdx.x / 32;
+    const int lane = threadIdx.x % 32;
+
+    __shared__ float warp_sums[32];
+    __shared__ float final_sum;
+
+    for (int depth = blockIdx.x; depth < k; depth += gridDim.x) {
+        float sum = 0.0f;
+        for (int col = threadIdx.x; col < n; col += blockDim.x) {
+            sum += weights[col] * input[depth * n + col];
+        }
+        linear_warp_reduction(sum, warp_sums);
+        __syncthreads();
+        if (threadIdx.x == 0) {
+            linear_warp_reduction(warp_sums[lane], &final_sum);
+            if (threadIdx.x == 0) {
+                output[depth] = Activation::device_forward(final_sum + *bias);
+            }
+        }
+        __syncthreads();
+    }    
+}
+
+template <typename Activation = Identity>
+__global__ void linear_forward_ftm(const float *__restrict__ input, const float *__restrict__ weights, const float *__restrict__ biases, float *__restrict__ output, MatrixMultShape shape) {
+
+    const int m = shape.output;
+    const int n = shape.input;
+    const int k = shape.batch_size;
+
+    const int warp = threadIdx.x / 32;
+    const int lane = threadIdx.x % 32;
+
+    __shared__ float warp_sums[32];
+    __shared__ float final_sum;
+
+    for (int depth = 0; depth < k; depth++) {
+
+        for (int row = blockIdx.x; row < m; row += gridDim.x) {
+            float sum = 0.0f;
+            for (int col = threadIdx.x; col < n; col += blockDim.x) {
+                sum += weights[row * n + col] * input[depth * n + col];
+            }
+            linear_warp_reduction(sum, warp_sums);
+            __syncthreads();
+            if (threadIdx.x == 0) {
+                linear_warp_reduction(warp_sums[lane], &final_sum);
+                if (threadIdx.x == 0) {
+                    output[depth * m + row] = Activation::device_forward(final_sum + biases[row]);
+                }
+            }
+            __syncthreads();
+        }
+    }
+    
 }
 
 #endif

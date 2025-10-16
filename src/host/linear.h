@@ -16,7 +16,7 @@ void cpu_linear_forward(Tensor<float, 1> &input, Tensor<float, 2> &weights, Tens
         for (int col = 0; col < weights.shape[0]; col++) {
             acc += weights[row * weights.shape[0] + col] * input[col];
         }
-        output.data[row] = Activation::apply(acc + biases[row]);
+        output.data[row] = Activation::device_forward(acc + biases[row]);
     }
 }
 

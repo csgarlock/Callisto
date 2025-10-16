@@ -48,7 +48,7 @@ void test_activation(const int n) {
 
     // Compute reference on CPU
     for (int i = 0; i < n; ++i)
-        host_out_cpu[i] = Activation::cpu(host_in[i]);
+        host_out_cpu[i] = Activation::host_forward(host_in[i]);
 
     // Validate
     float max_err = 0.0f;
