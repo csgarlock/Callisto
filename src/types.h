@@ -21,8 +21,20 @@ struct Tensor {
     T *data;
     int shape[Dim];
     MemoryLocation memory_location;
+
+    Tensor(const std::array<int, Dim> &shape, T *src_data, MemoryLocation loc = MemoryLocation::Host) : memory_location(loc) {
+        std::copy(shape.begin(), shape.end(), this->shape);
+        if (loc == MemoryLocation::Device) {
+            CUDA_CHECK(cudaMalloc(&data, mem_size()));
+            CUDA_CHECK(cudaMemcpy(data, src_data, mem_size(), cudaMemcpyHostToDevice));
+        }
+        else {
+            CUDA_CHECK(cudaMallocHost(&data, mem_size()));
+            memcpy(data, src_data, mem_size());
+        }
+    }
     
-    Tensor(const std::array<int, Dim>& shape, MemoryLocation loc = MemoryLocation::Host) : memory_location(loc) {
+    Tensor(const std::array<int, Dim> &shape, MemoryLocation loc = MemoryLocation::Host) : memory_location(loc) {
         std::copy(shape.begin(), shape.end(), this->shape);
         if (loc == MemoryLocation::Device) {
             CUDA_CHECK(cudaMalloc(&data, mem_size()));
@@ -95,17 +107,6 @@ struct Tensor {
 
         data = new_data;
         memory_location = new_location;
-    }
-
-    void copy_vec(std::vector<T> &vec) {
-        if (vec.size() != size() || !data) {
-            return;
-        }
-        if (memory_location == MemoryLocation::Device) {
-            CUDA_CHECK(cudaMemcpy(data, vec.data(), mem_size(), cudaMemcpyHostToDevice));
-        } else if (memory_location == MemoryLocation::Host) {
-            std::copy(vec.begin(), vec.end(), data);
-        }
     }
 
 };

@@ -1,7 +1,7 @@
 #ifndef KERNEL_LINEAR_H_INCLUDED
 #define KERNEL_LINEAR_H_INCLUDED
 
-#include "activation.h"
+#include "../types/activation_types.h"
 #include "../types.h"
 
 #include <cuda_runtime.h>

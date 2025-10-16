@@ -21,14 +21,10 @@ void test_mse(int size) {
     for (int i = 0; i < size; i++) {
         predicted[i] = dist(rng);
         actual[i] = dist(rng);
-        // std::cout << "i: " << i << ", pred: " << predicted[i] << ", act: " << actual[i] << std::endl;
     }
 
-    Tensor<float, 1> predicted_tensor({size}, MemoryLocation::Device);
-    Tensor<float, 1> actual_tensor({size}, MemoryLocation::Device);
-
-    predicted_tensor.copy_vec(predicted);
-    actual_tensor.copy_vec(actual);
+    Tensor<float, 1> predicted_tensor({size}, predicted.data(), MemoryLocation::Device);
+    Tensor<float, 1> actual_tensor({size}, actual.data(), MemoryLocation::Device);
 
     float reference = mse_cpu<float>(predicted.data(), actual.data(), size);
     
