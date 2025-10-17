@@ -30,7 +30,7 @@ void linear_forward(Tensor<float, 1> &input, Tensor<float, 2> &weights, Tensor<f
         } else if (m == 1) {
             linear_forward_mto<Activation><<<1, 512>>>(input.data, weights.data, biases.data, output.data, shape);
         } else {
-            linear_forward_general<Activation><<<std::min(m / 32, 256), 256>>>(input.data, weights.data, biases.data, output.data, shape);
+            linear_forward_general<Activation><<<std::max(1, std::min(m / 32, 256)), 256>>>(input.data, weights.data, biases.data, output.data, shape);
         }
         CUDA_CHECK(cudaDeviceSynchronize());
     } else {
@@ -56,7 +56,7 @@ void linear_forward_batch(Tensor<float, 2> &input, Tensor<float, 2> &weights, Te
 
     if (location == MemoryLocation::Device) {
         MatrixMultShape shape{n, m, k};
-        if (m % 32 == 0 && n % 32 == 0) {
+        if (m % 32 == 0 && n % 32 == 0 && k >= 32) {
             int batch_k = k - (k % 32);
             shape.batch_size = batch_k;
             dim3 blocks(
@@ -74,9 +74,9 @@ void linear_forward_batch(Tensor<float, 2> &input, Tensor<float, 2> &weights, Te
                 output_offset += m;
             }
         } else if (m == 1) {
-            linear_forward_mto<Activation><<<std::min(k, 256), 256>>>(input.data, weights.data, biases.data, output.data, shape);
+            linear_forward_mto<Activation><<<std::max(1, std::min(k, 256)), 256>>>(input.data, weights.data, biases.data, output.data, shape);
         } else {
-            linear_forward_general<Activation><<<std::min(m / 32, 256), 256>>>(input.data, weights.data, biases.data, output.data, shape);
+            linear_forward_general<Activation><<<std::max(1, std::min(m / 32, 256)), 256>>>(input.data, weights.data, biases.data, output.data, shape);
         }
         CUDA_CHECK(cudaDeviceSynchronize());
     } else {

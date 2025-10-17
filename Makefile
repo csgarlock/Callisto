@@ -7,6 +7,12 @@ CXXFLAGS    := -O3 -std=c++20 -MMD -MP
 NVCCFLAGS   := -O3 -std=c++20 -arch=sm_89 -MMD -MP
 LDFLAGS     := -lcudart
 
+# Debug configuration
+ifeq ($(DEBUG),1)
+    CXXFLAGS   := -O0 -g -std=c++20 -MMD -MP
+    NVCCFLAGS  := -O0 -G -g -std=c++20 -arch=sm_89 -MMD -MP
+endif
+
 # Directory paths
 SRC_DIR     := src
 BUILD_DIR   := build
