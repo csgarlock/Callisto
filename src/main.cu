@@ -1,13 +1,20 @@
 #include "tests/inference_test.h"
 #include "tests/loss_test.h"
+#include "tests/linear_test.h"
 
 #include "types.h"
 #include "util.h"
 #include <array>
 
 int main() {
-    test_mse(32);
-    test_mse(1024);
-    test_mse(524288);
+    linear_forward_test_batch(256, 256, 64);
+    linear_forward_test_batch(1, 256, 1074);
+    linear_forward_test_batch(1, 256, 1074);
+    linear_forward_test_batch(1, 256, 1074);
+    linear_forward_test_batch(1, 256, 1074);
+    linear_forward_test_batch(1, 256, 325);
+    linear_forward_test_batch(1, 256, 325);
+    linear_forward_test_batch(1, 256, 325);
+    linear_forward_test_batch(1, 256, 325);
     return 0;
 }

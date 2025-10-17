@@ -3,6 +3,7 @@
 #include "../host/reductions.h"
 #include "../host/loss.h"
 #include "../kernels/loss.h"
+#include "../util.h"
 
 #include <cmath>
 

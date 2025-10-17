@@ -29,7 +29,7 @@ struct Tensor {
             CUDA_CHECK(cudaMemcpy(data, src_data, mem_size(), cudaMemcpyHostToDevice));
         }
         else {
-            CUDA_CHECK(cudaMallocHost(&data, mem_size()));
+            data = new T[size()];
             memcpy(data, src_data, mem_size());
         }
     }
@@ -40,7 +40,7 @@ struct Tensor {
             CUDA_CHECK(cudaMalloc(&data, mem_size()));
         }
         else {
-            CUDA_CHECK(cudaMallocHost(&data, mem_size()));
+            data = new T[size()];
         }
     }
 
@@ -49,14 +49,14 @@ struct Tensor {
             CUDA_CHECK(cudaMalloc(&data, sizeof(T)));
         }
         else {
-            CUDA_CHECK(cudaMallocHost(&data, sizeof(T)));
+            data = new T[1];
         }
     }
 
     ~Tensor() {
         if (data) {
             if (memory_location == MemoryLocation::Host) {
-                CUDA_CHECK(cudaFreeHost(data));
+                delete[] data;
             } else {
                 CUDA_CHECK(cudaFree(data));
             }
@@ -98,13 +98,12 @@ struct Tensor {
         if (new_location == MemoryLocation::Device) {
             CUDA_CHECK(cudaMalloc(&new_data, mem_size()));
             CUDA_CHECK(cudaMemcpy(new_data, data, mem_size(), cudaMemcpyHostToDevice));
-            CUDA_CHECK(cudaFreeHost(data));
+            delete[] data;
         } else {
-            CUDA_CHECK(cudaMallocHost(&new_data, mem_size()));
+            new_data = new T[size()];
             CUDA_CHECK(cudaMemcpy(new_data, data, mem_size(), cudaMemcpyDeviceToHost));
             CUDA_CHECK(cudaFree(data));
         }
-
         data = new_data;
         memory_location = new_location;
     }
