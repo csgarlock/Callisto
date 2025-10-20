@@ -200,6 +200,9 @@ __global__ void linear_forward_mto(const float *__restrict__ input, const float 
     __shared__ float warp_sums[32];
     __shared__ float final_sum;
 
+    clear_accumulators<false>(warp_sums);
+    __syncthreads();
+
     for (int depth = blockIdx.x; depth < k; depth += gridDim.x) {
         float sum = 0.0f;
         for (int col = threadIdx.x; col < n; col += blockDim.x) {
@@ -229,6 +232,9 @@ __global__ void linear_forward_general(const float *__restrict__ input, const fl
 
     __shared__ float warp_sums[32];
     __shared__ float final_sum;
+
+    clear_accumulators<false>(warp_sums);
+    __syncthreads();
 
     for (int depth = 0; depth < k; depth++) {
 

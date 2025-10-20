@@ -47,7 +47,7 @@ void linear_forward_test(int m, int n) {
 }
 
 template <typename Activation = Identity>
-void linear_forward_test_batch(int m, int n, int k, bool debug = false) {
+void linear_forward_test_batch(int m, int n, int k) {
     std::cout << "Testing linear_forward with m=" << m << ", n=" << n <<", k=" << k << std::endl;
     
     Tensor<float, 2> t_input({n, k}, MemoryLocation::Host);
@@ -78,7 +78,7 @@ void linear_forward_test_batch(int m, int n, int k, bool debug = false) {
     }
 
     std::cout << "Max Error: " << max_error << std::endl;
-    // CUDA_CHECK(cudaDeviceSynchronize());
+    CUDA_CHECK(cudaDeviceSynchronize());
 }
 
 #endif
