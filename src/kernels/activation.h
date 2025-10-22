@@ -4,24 +4,36 @@
 #include <cuda_runtime.h>
 #include "../types/activation_types.h"
 
-template <typename Activation>
-__global__ void activation(float *__restrict__ vec, int n) {
+template <typename Activation, bool Backwards = false>
+__global__ void activation(const float *input, float *output, int n) {
     int n4 = n / 4;
-    float4 *vec4 = reinterpret_cast<float4*>(vec);
+    float4 *input4 = reinterpret_cast<const float4*>(input);
+    float *output4 = reinterpret_cast<float4*>(output);
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = gridDim.x * blockDim.x;
     for (int i = idx; i < n4; i += stride) {
-        float4 v = vec4[i];
-        v.x = Activation::device_forward(v.x);
-        v.y = Activation::device_forward(v.y);
-        v.z = Activation::device_forward(v.z);
-        v.w = Activation::device_forward(v.w);
-        vec4[i] = v;
+        float4 v = input4[i];
+        if constexpr (Backwards) {
+            v.x = Activation::device_derivative(v.x);
+            v.y = Activation::device_derivative(v.y);
+            v.z = Activation::device_derivative(v.z);
+            v.w = Activation::device_derivative(v.w);
+        } else {
+            v.x = Activation::device_forward(v.x);
+            v.y = Activation::device_forward(v.y);
+            v.z = Activation::device_forward(v.z);
+            v.w = Activation::device_forward(v.w);
+        }
+        output4[i] = v;
     }
 
     if (blockIdx.x == 0 && threadIdx.x < n % 4) {
         int cleanup_idx = (n & ~0b11) + threadIdx.x;
-        vec[cleanup_idx] = Activation::device_forward(vec[cleanup_idx]);
+        if constexpr (Backwards) {
+            output[cleanup_idx] = Activation::device_derivative(vec[cleanup_idx]);
+        } else {
+            output[cleanup_idx] = Activation::device_forward(vec[cleanup_idx]);
+        }
     }
 }
 
