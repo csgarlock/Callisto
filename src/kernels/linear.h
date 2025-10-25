@@ -2,7 +2,7 @@
 #define KERNEL_LINEAR_H_INCLUDED
 
 #include "../types/activation_types.h"
-#include "../types.h"
+#include "../types/kernel_parameters.h"
 
 #include <cuda_runtime.h>
 

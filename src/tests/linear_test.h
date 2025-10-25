@@ -3,7 +3,8 @@
 
 #include "../types/activation_types.h"
 #include "../unified/linear.h"
-#include "../types.h"
+#include "../types/tensor.h"
+#include "../types/kernel_parameters.h"
 #include "../util.h"
 
 #include <vector>
@@ -14,12 +15,12 @@
 #include <chrono>
 
 template <typename Activation = Identity>
-void linear_forward_test(int m, int n) {
+void linear_forward_test(size_t m, size_t n) {
     std::cout << "Testing linear_forward with m=" << m << ", n=" << n << std::endl;
     
-    Tensor<float, 1> t_input({n}, MemoryLocation::Host);
-    Tensor<float, 2> t_weights({n, m}, MemoryLocation::Host);
-    Tensor<float, 1> t_biases({m}, MemoryLocation::Host);
+    Tensor<float> t_input({n}, MemoryLocation::Host);
+    Tensor<float> t_weights({n, m}, MemoryLocation::Host);
+    Tensor<float> t_biases({m}, MemoryLocation::Host);
 
     // Initialize data
     std::mt19937 rng(42);
@@ -28,8 +29,8 @@ void linear_forward_test(int m, int n) {
     for (int i = 0; i < m * n; ++i) t_weights.data[i] = dist(rng);
     for (int i = 0; i < m; ++i) t_biases.data[i] = dist(rng);
 
-    Tensor<float, 1> h_output({m}, MemoryLocation::Host);
-    Tensor<float, 1> d_output({m}, MemoryLocation::Device);
+    Tensor<float> h_output({m}, MemoryLocation::Host);
+    Tensor<float> d_output({m}, MemoryLocation::Device);
 
     linear_forward<Activation>(t_input, t_weights, t_biases, h_output, MemoryLocation::Host);
     std::cout << "Host Finished..." << std::endl;
@@ -47,12 +48,12 @@ void linear_forward_test(int m, int n) {
 }
 
 template <typename Activation = Identity>
-void linear_forward_test_batch(int m, int n, int k) {
+void linear_forward_test_batch(size_t m, size_t n, size_t k) {
     std::cout << "Testing linear_forward with m=" << m << ", n=" << n <<", k=" << k << std::endl;
     
-    Tensor<float, 2> t_input({n, k}, MemoryLocation::Host);
-    Tensor<float, 2> t_weights({n, m}, MemoryLocation::Host);
-    Tensor<float, 1> t_biases({m}, MemoryLocation::Host);
+    Tensor<float> t_input({n, k}, MemoryLocation::Host);
+    Tensor<float> t_weights({n, m}, MemoryLocation::Host);
+    Tensor<float> t_biases({m}, MemoryLocation::Host);
 
     // Initialize data
     std::mt19937 rng(42);
@@ -61,15 +62,15 @@ void linear_forward_test_batch(int m, int n, int k) {
     for (int i = 0; i < m * n; ++i) t_weights.data[i] = dist(rng);
     for (int i = 0; i < m; ++i) t_biases.data[i] = dist(rng);
     
-    Tensor<float, 2> h_output({m, k}, MemoryLocation::Host);
-    Tensor<float, 2> d_output({m, k}, MemoryLocation::Device);
+    Tensor<float> h_output({m, k}, MemoryLocation::Host);
+    Tensor<float> d_output({m, k}, MemoryLocation::Device);
     
     linear_forward_batch<Activation>(t_input, t_weights, t_biases, h_output, MemoryLocation::Host);
     std::cout << "Host Finished..." << std::endl;
 
     linear_forward_batch<Activation>(t_input, t_weights, t_biases, d_output, MemoryLocation::Device);
     std::cout << "Device Finished..." << std::endl;
-    
+  
     d_output.change_memory_location(MemoryLocation::Host);
 
     float max_error = 0.0f;

@@ -1,14 +1,14 @@
 #ifndef HOST_LINEAR_H_INCLUDED
 #define HOST_LINEAR_H_INCLUDED
 
-#include "../types.h"
+#include "../types/tensor.h"
 #include "../kernels/activation.h"
 
 #include <cassert>
 #include <iostream>
 
 template <typename Activation = Identity>
-void cpu_linear_forward(Tensor<float, 1> &input, Tensor<float, 2> &weights, Tensor<float, 1> &biases, Tensor<float, 1> &output) {
+void cpu_linear_forward(Tensor<float> &input, Tensor<float> &weights, Tensor<float> &biases, Tensor<float> &output) {
     assert(input.shape[0] == weights.shape[0]);
     assert(weights.shape[1] == biases.shape[0]);
     assert(weights.shape[1] = output.shape[0]);
@@ -22,7 +22,7 @@ void cpu_linear_forward(Tensor<float, 1> &input, Tensor<float, 2> &weights, Tens
 }
 
 template <typename Activation = Identity>
-void cpu_linear_forward_batch(Tensor<float, 2> &input, Tensor<float, 2> &weights, Tensor<float, 1> &biases, Tensor<float, 2> &output) {
+void cpu_linear_forward_batch(Tensor<float> &input, Tensor<float> &weights, Tensor<float> &biases, Tensor<float> &output) {
     assert(input.shape[0] == weights.shape[0]);
     assert(weights.shape[1] == biases.shape[0]);
     assert(weights.shape[1] = output.shape[0]);

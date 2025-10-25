@@ -2,14 +2,13 @@
 
 #include "../unified/loss.h"
 #include "../host/loss.h"
-#include "../types.h"
+#include "../types/tensor.h"
 
 #include <vector>
 #include <iostream>
 #include <random>
-#include <array>
 
-void test_mse(int size) {
+void test_mse(size_t size) {
     std::cout << "Testing Mean Square error with: " << size << std::endl;
 
     std::mt19937 rng(42);
@@ -23,8 +22,10 @@ void test_mse(int size) {
         actual[i] = dist(rng);
     }
 
-    Tensor<float, 1> predicted_tensor({size}, predicted.data(), MemoryLocation::Device);
-    Tensor<float, 1> actual_tensor({size}, actual.data(), MemoryLocation::Device);
+    std::vector<size_t> size_vec = {size};
+
+    Tensor<float> predicted_tensor(size_vec, predicted.data(), MemoryLocation::Device);
+    Tensor<float> actual_tensor(size_vec, actual.data(), MemoryLocation::Device);
 
     float reference = mse_cpu<float>(predicted.data(), actual.data(), size);
     

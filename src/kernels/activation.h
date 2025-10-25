@@ -7,8 +7,8 @@
 template <typename Activation, bool Backwards = false>
 __global__ void activation(const float *input, float *output, int n) {
     int n4 = n / 4;
-    float4 *input4 = reinterpret_cast<const float4*>(input);
-    float *output4 = reinterpret_cast<float4*>(output);
+    const float4 *input4 = reinterpret_cast<const float4*>(input);
+    float4 *output4 = reinterpret_cast<float4*>(output);
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = gridDim.x * blockDim.x;
     for (int i = idx; i < n4; i += stride) {
@@ -30,9 +30,9 @@ __global__ void activation(const float *input, float *output, int n) {
     if (blockIdx.x == 0 && threadIdx.x < n % 4) {
         int cleanup_idx = (n & ~0b11) + threadIdx.x;
         if constexpr (Backwards) {
-            output[cleanup_idx] = Activation::device_derivative(vec[cleanup_idx]);
+            output[cleanup_idx] = Activation::device_derivative(input[cleanup_idx]);
         } else {
-            output[cleanup_idx] = Activation::device_forward(vec[cleanup_idx]);
+            output[cleanup_idx] = Activation::device_forward(input[cleanup_idx]);
         }
     }
 }

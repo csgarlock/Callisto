@@ -1,8 +1,6 @@
-#include "tests/inference_test.h"
 #include "tests/loss_test.h"
 #include "tests/linear_test.h"
 #include "types/activation_types.h"
-#include "types.h"
 #include "util.h"
 
 #include <array>

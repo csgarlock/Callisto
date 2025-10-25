@@ -1,7 +1,8 @@
 #ifndef UNIFIED_LINEAR_H_INCLUDED
 #define UNIFIED_LINEAR_H_INCLUDED
 
-#include "../types.h"
+#include "../types/tensor.h"
+#include "../types/kernel_parameters.h"
 #include "../types/activation_types.h"
 #include "../host/linear.h"
 #include "../kernels/linear.h"
@@ -10,7 +11,7 @@
 #include <iostream>
 
 template <typename Activation = Identity>
-void linear_forward(Tensor<float, 1> &input, Tensor<float, 2> &weights, Tensor<float, 1> &biases, Tensor<float, 1> &output, MemoryLocation location = MemoryLocation::Device) {
+void linear_forward(Tensor<float> &input, Tensor<float> &weights, Tensor<float> &biases, Tensor<float> &output, MemoryLocation location = MemoryLocation::Device) {
     
     const int n = weights.shape[0];
     const int m = weights.shape[1];
@@ -39,7 +40,7 @@ void linear_forward(Tensor<float, 1> &input, Tensor<float, 2> &weights, Tensor<f
 }
 
 template <typename Activation = Identity>
-void linear_forward_batch(Tensor<float, 2> &input, Tensor<float, 2> &weights, Tensor<float, 1> &biases, Tensor<float, 2> &output, MemoryLocation location = MemoryLocation::Device) {
+void linear_forward_batch(Tensor<float> &input, Tensor<float> &weights, Tensor<float> &biases, Tensor<float> &output, MemoryLocation location = MemoryLocation::Device) {
 
     const int n = weights.shape[0];
     const int m = weights.shape[1];

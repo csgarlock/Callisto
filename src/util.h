@@ -1,6 +1,8 @@
 #ifndef UTIL_H_INCLUDED
 #define UTIL_H_INCLUDED
 
+#include <iostream>
+
 #define CUDA_CHECK(err) \
     do { \
         cudaError_t e = (err); \
